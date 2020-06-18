@@ -24,41 +24,34 @@ X_train         <- read.table("X_train.txt")
 y_train         <- read.table("y_train.txt")
 subject_train   <- read.table("subject_train.txt")
 
-# colnames features in X_test & X_train
-colnames(X_test)  <- features
-colnames(X_train) <- features
-# Extract only sd and mean observations
+# Merge data 
+y       <- rbind(y_train, y_test)
+x       <- rbind(X_train, X_test)
+subject <- rbind(subject_train, subject_test)
+
+# Insert X colname 
+colnames(x)  <- features
+
+# Extract only sd and mean data
 extract_features  <- grepl("mean|std",features)
+x                 <- x[,extract_features]
 
-X_test  <- X_test[,extract_features]
-X_train <- X_train[,extract_features]
+# Merge all data 
+data              <- cbind(subject,y,x)
 
-# Activity labels
-y_test[,2]             <- activity_labels[y_test[,1]]
-colnames(y_test)       <- c("Activity_ID", "Activity_Label")
-colnames(subject_test) <- "subject"
+# Colname for subject and activity
+colnames(data)[1] <- c("subject_id")
+colnames(data)[2] <- c("activity_id")
 
-# Activity data
-y_train[,2]          <- activity_labels[y_train[,1]]
-names(y_train)       <- c("Activity_ID", "Activity_Label")
-names(subject_train) <- "subject"
-
-# merge data by col 
-test_data  <- cbind(as.data.table(subject_test), y_test, X_test)
-train_data <- cbind(as.data.table(subject_train), y_train, X_train)
-
-# merge test & train by rows
-data <- rbind(test_data, train_data)
-
+# Replace the activity labels levels in acitivity_id
+data$activity_id<-factor(data$activity_id, levels = c(1:6), labels=activity_labels)
 # re sort Data
-id_labels   <- c("subject", "Activity_ID", "Activity_Label")
-data_labels <- setdiff(colnames(data), id_labels)
-melt_data   <- melt(data, id = id_labels, measure.vars = data_labels)
+id_labels   <- c("subject_id", "activity_id")
+melt_data   <- melt(data, id = id_labels)
+# Tidy Data
+tidy_Data <- dcast(melt_data, subject_id + activity_id ~ variable, mean)
+write.table(final_data,file="tidy_Data.txt",row.names = FALSE)
 
-# final data
-
-final_data <- dcast(melt_data, subject + Activity_Label ~ variable, mean)
-write.table(final_data,file="final_data.txt",row.names = FALSE)
 
 
 
